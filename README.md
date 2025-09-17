@@ -63,6 +63,8 @@ This will fix the problem, but I've noticed that after the server reboots, I've 
 
 Hooray! Pihole is now making my network be a more sacred place.
 
+[fedora@vps-9deb0f59 ~]$ sudo vi /etc/pihole/pihole.toml change port to be 8010 for webserver
+
 Thanks for reading. Feel free to send comments, questions, or recommendations to hey@chuck.is.
 # Install and setup your VPN
 ## Step 4: install PiVPN

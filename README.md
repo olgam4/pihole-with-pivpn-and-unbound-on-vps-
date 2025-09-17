@@ -37,10 +37,33 @@
 ```ssh -i /Users/[your user]/.ssh/PiVPNHOLE.pem ubuntu@[your host]``` 
 
 ## Step 3: install PiHole
+Installing Pihole on Fedora Server 42
+Published: 2025-05-06
+Updated: 2025-08-15
+I've installed Pihole probably a dozen times at this point. The installation guide that Pihole provides is super helpful, but I've had to do some additional steps to get it working in my environment, specifically Fedora Server 42.
 
-```curl -sSL https://install.pi-hole.net | bash```
-* Take note of your PiHole's web interface IP and the password
+First, I had to change SELinux to permissive so that I could install pihole. To set SELinux to permissive edit the SELinux configuration file with sudo vim /etc/selinux/config. Then modify the SELinux parameter by changing the line SELINUX=enforcing to SELINUX=permissive. Save the changes to the file, then reboot the system for the changes to take effect.
 
+Fedora 42 isn't officially supported yet, so I had to force it with the command sudo curl -sSL https://install.pi-hole.net | sudo PIHOLE_SKIP_OS_CHECK=true bash. This will run through the install script. Once it's completed, I've had to open up some ports allowing http, https, dns, etc:
+firewall-cmd --permanent --add-service=http --add-service=https --add-service=dns --add-service=dhcp --add-service=dhcpv6 --add-service=ntp
+firewall-cmd --permanent --new-zone=ftl
+firewall-cmd --permanent --zone=ftl --add-interface=lo
+firewall-cmd --reload
+
+Once the installation is complete, I like to change the randomly generated password to something I'll remember. To do this, run sudo pihole setpassword, enter the new password, then reboot the system.
+
+At this point, you can re-enable SELinux by again editing /etc/selinux/config and changing SELINUX=permissive back to SELINUX=enforcing. Save the file and reboot. Thank you to Oliver for pointing out that we can set SELinux back to enforcing after everything gets set up.
+
+In most cases, this should be the end, but in both a virtual environment and bare metal, I've had pihole fail to start with the error /run/log/pihole/pihole.log: No such file or directory, at least on Fedora 42. To solve this, I had to create the folder and give the proper permissions to pihole.
+sudo mkdir -p /run/log/pihole
+sudo chown pihole:pihole /run/log/pihole
+sudo systemctl restart pihole-FTL
+
+This will fix the problem, but I've noticed that after the server reboots, I've had to run these commands again. To solve this problem, I've had to automate this with the systemd mechanism called tmpfiles.d. Creating/editing the file sudo vim /etc/tmpfiles.d/pihole.conf and then adding the line d /run/log/pihole 0755 pihole pihole -. This automatically creates a folder ("d"), providing the pihole group and owner the 0755 permission, and "-" meaning no age limit (meaning do not delete).
+
+Hooray! Pihole is now making my network be a more sacred place.
+
+Thanks for reading. Feel free to send comments, questions, or recommendations to hey@chuck.is.
 # Install and setup your VPN
 ## Step 4: install PiVPN
 ```curl -L https://install.pivpn.io | bash```
